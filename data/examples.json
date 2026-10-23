@@ -1,0 +1,166 @@
+[
+  {
+    "id": "review",
+    "label": "Отзыв с WB",
+    "text": "Порошок не растворяется, запах другой, чем в прошлый раз, и на крышке нет пломбы. Это точно ваш товар?",
+    "recorded": {
+      "result": {
+        "id": "example-review",
+        "outcome": "routed",
+        "rulesMs": 1,
+        "jev": {
+          "pRequest": 0.93,
+          "category": "review",
+          "pCategory": 0.98,
+          "pInjection": 0.02,
+          "score": 4,
+          "ms": 334,
+          "source": "recorded",
+          "pCounterfeit": 0.84
+        },
+        "department": "service",
+        "flags": [
+          "legal"
+        ],
+        "used": 0,
+        "limit": 0
+      },
+      "draft": {
+        "id": "example-review",
+        "text": "Спасибо, что написали: по описанию это похоже на подделку. Пришлите, пожалуйста, фото банки с крышкой и номер заказа в чат магазина. Мы проверим продавца и вернём деньги или заменим банку на оригинальную.",
+        "ms": 3829,
+        "model": "claude-sonnet-5-5",
+        "source": "recorded"
+      }
+    }
+  },
+  {
+    "id": "wholesale",
+    "label": "Заявка оптовика",
+    "text": "Здравствуйте! Сеть хозяйственных магазинов в Караганде, 9 точек. Пришлите прайс и условия для дистрибьютора, интересует эксклюзив по области.",
+    "recorded": {
+      "result": {
+        "id": "example-wholesale",
+        "outcome": "routed",
+        "rulesMs": 1,
+        "jev": {
+          "pRequest": 0.93,
+          "category": "wholesale",
+          "pCategory": 0.94,
+          "pInjection": 0.02,
+          "score": 5,
+          "ms": 321,
+          "source": "recorded"
+        },
+        "department": "wholesale",
+        "flags": [],
+        "used": 0,
+        "limit": 0
+      },
+      "draft": {
+        "id": "example-wholesale",
+        "text": "Здравствуйте. Спасибо за интерес к эксклюзиву по Карагандинской области. Пришлите, пожалуйста, примерный объём закупки в месяц и адреса магазинов: подготовим прайс и условия, менеджер опта позвонит завтра до 12:00 по Астане.",
+        "ms": 3368,
+        "model": "claude-sonnet-5-5",
+        "source": "recorded"
+      }
+    }
+  },
+  {
+    "id": "blogger",
+    "label": "Блогер",
+    "text": "Привет, веду канал про уборку и организацию дома, 85 тыс. подписчиков. Хочу сделать честный тест вашего очистителя на старых пятнах. Сколько готовы заплатить?",
+    "recorded": {
+      "result": {
+        "id": "example-blogger",
+        "outcome": "routed",
+        "rulesMs": 1,
+        "jev": {
+          "pRequest": 0.95,
+          "category": "blogger",
+          "pCategory": 0.92,
+          "pInjection": 0.02,
+          "score": 5,
+          "ms": 278,
+          "source": "recorded"
+        },
+        "department": "marketing",
+        "flags": [],
+        "used": 0,
+        "limit": 0
+      },
+      "draft": {
+        "id": "example-blogger",
+        "text": "Привет, формат с тестом на старых пятнах нам подходит. Пришлите, пожалуйста, статистику охватов за последний месяц и свою цену за интеграцию, а мы отправим образцы и бриф.",
+        "ms": 3330,
+        "model": "claude-sonnet-5-5",
+        "source": "recorded"
+      }
+    }
+  },
+  {
+    "id": "candidate",
+    "label": "Отклик кандидата",
+    "text": "Добрый день. Год работаю менеджером на Wildberries в магазине товаров для дома, вывел 40 карточек. Увидел вашу вакансию менеджера маркетплейсов. Какие этапы отбора?",
+    "recorded": {
+      "result": {
+        "id": "example-candidate",
+        "outcome": "routed",
+        "rulesMs": 1,
+        "jev": {
+          "pRequest": 0.96,
+          "category": "candidate",
+          "pCategory": 0.87,
+          "pInjection": 0.02,
+          "score": 5,
+          "ms": 500,
+          "source": "recorded"
+        },
+        "department": "hr",
+        "flags": [],
+        "used": 0,
+        "limit": 0
+      },
+      "draft": {
+        "id": "example-candidate",
+        "text": "Добрый день, спасибо за отклик. Опыт с 40 карточками нам интересен. Этапы такие: короткий звонок с HR, тестовое задание по одной карточке и встреча с руководителем направления. Напишите, пожалуйста, когда вам удобно созвониться на этой неделе.",
+        "ms": 2887,
+        "model": "claude-sonnet-5-5",
+        "source": "recorded"
+      }
+    }
+  },
+  {
+    "id": "approval",
+    "label": "Согласование",
+    "text": "Прошу согласовать 180 тыс. на двух блогеров в декабре к новогодней уборке. Один уже работал с нами весной.",
+    "recorded": {
+      "result": {
+        "id": "example-approval",
+        "outcome": "routed",
+        "rulesMs": 1,
+        "jev": {
+          "pRequest": 0.93,
+          "category": "approval",
+          "pCategory": 0.87,
+          "pInjection": 0.02,
+          "score": 3,
+          "ms": 362,
+          "source": "recorded",
+          "pEnoughData": 0.46
+        },
+        "department": "approvals",
+        "flags": [],
+        "used": 0,
+        "limit": 0
+      },
+      "draft": {
+        "id": "example-approval",
+        "text": "Сводка для согласующего: 180 000 ₽ на две интеграции в декабре, один блогер проверен весной. Не хватает: имени второго блогера, его охватов и стоимости каждой интеграции. Риск средний: по проверенному блогеру можно согласовать сразу.",
+        "ms": 3541,
+        "model": "claude-sonnet-5-5",
+        "source": "recorded"
+      }
+    }
+  }
+]
