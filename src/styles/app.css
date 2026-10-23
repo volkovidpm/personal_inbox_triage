@@ -126,3 +126,13 @@ body {
   margin: 0;
   padding-left: var(--space-6);
 }
+
+/* Полоса вкладок прокручивается по горизонтали на узком экране, но без видимого скроллбара. */
+.it-tabs {
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.it-tabs::-webkit-scrollbar {
+  display: none;
+}
