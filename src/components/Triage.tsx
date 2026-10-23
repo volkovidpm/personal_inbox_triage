@@ -4,6 +4,7 @@ import { TEXT_LIMIT } from "../config";
 import { DEPARTMENT_LABEL, TYPE_LABEL } from "../lib/format";
 import type { Category, ClassifyResult, MyRequest } from "../lib/types";
 import { useTriage } from "../triage/useTriage";
+import { AccessGate } from "./AccessGate";
 import { DraftReply } from "./DraftReply";
 import { Notice } from "./Notice";
 import { ProbabilityMeter } from "./ProbabilityMeter";
@@ -66,8 +67,26 @@ function History({ items }: { items: MyRequest[] }) {
   );
 }
 
-export function Triage({ mine }: { mine: MyRequest[] }) {
-  const { state, run } = useTriage();
+function RetryNotice({ what, onRetry }: { what: "classify" | "draft"; onRetry: () => void }) {
+  return (
+    <section className="it-notice it-notice--warn" role="alert">
+      <h3 className="it-notice__title">{what === "draft" ? "Черновик не получился" : "Нет связи с сервером"}</h3>
+      <p className="it-notice__text">
+        {what === "draft"
+          ? "Разбор сохранён, а черновик не пришёл. Попробуйте ещё раз."
+          : "Сервер n8n не ответил или ответил с ошибкой. Проверьте соединение и попробуйте ещё раз."}
+      </p>
+      <div className="it-notice__actions">
+        <button className="it-btn it-btn--secondary" type="button" onClick={onRetry}>
+          Повторить
+        </button>
+      </div>
+    </section>
+  );
+}
+
+export function Triage({ mine, onUsage }: { mine: MyRequest[]; onUsage?: (usage: { used: number; limit: number }) => void }) {
+  const { state, run, retry } = useTriage();
   const [text, setText] = useState("");
   const [history, setHistory] = useState<MyRequest[]>(mine);
   const chars = [...text].length;
@@ -77,6 +96,10 @@ export function Triage({ mine }: { mine: MyRequest[] }) {
     const entry: MyRequest = { text: state.text, createdAt: new Date().toISOString(), result: state.result, draft: state.draft ?? null };
     setHistory((h) => (h.some((x) => x.result.id === entry.result.id) ? h : [entry, ...h]));
   }, [state.busy, state.result, state.draft, state.text]);
+
+  useEffect(() => {
+    if (state.result) onUsage?.({ used: state.result.used, limit: state.result.limit });
+  }, [state.result, onUsage]);
 
   const runExample = (id: string) => {
     const ex = examples.find((e) => e.id === id);
@@ -132,11 +155,8 @@ export function Triage({ mine }: { mine: MyRequest[] }) {
           {state.result && <Readings result={state.result} />}
           {state.result && <RouteChips result={state.result} />}
           {state.reason && <Notice reason={state.reason} jev={state.result?.jev} onExample={runExample} />}
-          {state.error && state.reason !== "rate_limited" && (
-            <p className="t-small app-muted" role="alert">
-              Не удалось связаться с сервером. Попробуйте ещё раз через минуту.
-            </p>
-          )}
+          {state.retry && <RetryNotice what={state.retry} onRetry={retry} />}
+          {state.access && <AccessGate variant={state.access} inline />}
           {state.draft && <DraftReply draft={state.draft} />}
         </section>
       )}

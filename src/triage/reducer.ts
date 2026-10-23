@@ -1,4 +1,4 @@
-import { ApiError } from "../lib/api";
+import { ApiError, gateFor, type Gate } from "../lib/api";
 import { DEPARTMENT_LABEL, TYPE_LABEL, formatDuration, formatPercent } from "../lib/format";
 import type { ClassifyResult, DraftResult, RejectReason } from "../lib/types";
 
@@ -19,12 +19,17 @@ export interface TriageState {
   draft?: DraftResult;
   reason?: NoticeReason;
   error?: ApiError;
+  /** Что повторить по кнопке «Повторить»: весь разбор или только черновик. */
+  retry?: "classify" | "draft";
+  /** Доступ закончился посреди сессии — показать экран доступа. */
+  access?: Gate;
 }
 
 export type TriageAction =
   | { type: "start"; text: string }
   | { type: "classified"; runId: number; result: ClassifyResult }
   | { type: "drafted"; runId: number; draft: DraftResult }
+  | { type: "redraft" }
   | { type: "failed"; runId: number; error: ApiError };
 
 const pending: StageView = { state: "pending", meta: "" };
@@ -84,6 +89,9 @@ export function triageReducer(state: TriageState, action: TriageAction): TriageS
       stages: { rules: { state: "active", meta: "проверяю…" }, jev: pending, route: pending, draft: pending },
     };
   }
+  if (action.type === "redraft") {
+    return { ...state, busy: true, error: undefined, retry: undefined, stages: { ...state.stages, draft: { state: "active", meta: "пишет…" } } };
+  }
   if (action.runId !== state.runId) return state;
 
   if (action.type === "classified") return classified(state, action.result);
@@ -93,17 +101,13 @@ export function triageReducer(state: TriageState, action: TriageAction): TriageS
   }
 
   const { error } = action;
-  if (state.stages.draft.state === "active") {
-    return { ...state, busy: false, error, stages: { ...state.stages, draft: { state: "stopped", meta: "не удалось" } } };
-  }
-  if (error.kind === "rate_limited") {
-    return {
-      ...state,
-      busy: false,
-      error,
-      reason: "rate_limited",
-      stages: { rules: { state: "stopped", meta: "слишком часто" }, jev: skipped, route: skipped, draft: skipped },
-    };
-  }
-  return { ...state, busy: false, error, stages: { rules: { state: "stopped", meta: "ошибка связи" }, jev: skipped, route: skipped, draft: skipped } };
+  const drafting = state.stages.draft.state === "active";
+  const stopAt = (meta: string): Record<Stage, StageView> =>
+    drafting ? { ...state.stages, draft: { state: "stopped", meta } } : { rules: { state: "stopped", meta }, jev: skipped, route: skipped, draft: skipped };
+  const access = gateFor(error.kind);
+  if (access) return { ...state, busy: false, error, access, stages: stopAt("нет доступа") };
+  if (error.kind === "ai_unavailable") return { ...state, busy: false, error, reason: "ai_unavailable", stages: stopAt("недоступна") };
+  if (drafting) return { ...state, busy: false, error, retry: "draft", stages: stopAt("не удалось") };
+  if (error.kind === "rate_limited") return { ...state, busy: false, error, reason: "rate_limited", stages: stopAt("слишком часто") };
+  return { ...state, busy: false, error, retry: "classify", stages: stopAt("ошибка связи") };
 }

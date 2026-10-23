@@ -6,7 +6,7 @@ import { HowItWorks } from "./components/HowItWorks";
 import { Feed } from "./components/Feed";
 import { Tabs } from "./components/Tabs";
 import { Triage } from "./components/Triage";
-import { ApiError, configureApi, getFeed, type ApiErrorKind } from "./lib/api";
+import { ApiError, configureApi, gateFor, getFeed, type ApiErrorKind } from "./lib/api";
 import { getDeviceId, loadInvite } from "./lib/invite";
 import type { FeedResponse } from "./lib/types";
 
@@ -18,9 +18,6 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 type Load = { state: "loading" } | { state: "error"; kind: ApiErrorKind } | { state: "ready"; feed: FeedResponse };
-
-const INVITE_GATE: ApiErrorKind[] = ["no_invite", "unknown_invite", "inactive"];
-const EXPIRED_GATE: ApiErrorKind[] = ["expired", "limit_reached"];
 
 function safeStorage(): Storage | null {
   try {
@@ -42,12 +39,14 @@ export function App() {
   const [load, setLoad] = useState<Load>({ state: "loading" });
   const [tab, setTab] = useState<Tab>("feed");
   const [now, setNow] = useState(() => new Date());
+  const [usage, setUsage] = useState<{ used: number; limit: number } | null>(null);
 
   const fetchFeed = useCallback(() => {
     setLoad({ state: "loading" });
     getFeed()
       .then((feed) => {
         setNow(new Date());
+        setUsage(null);
         setLoad({ state: "ready", feed });
       })
       .catch((e: unknown) => setLoad({ state: "error", kind: e instanceof ApiError ? e.kind : "bad_response" }));
@@ -59,12 +58,13 @@ export function App() {
   }, [fetchFeed]);
 
   let body;
-  if (load.state === "error" && INVITE_GATE.includes(load.kind)) body = <AccessGate variant="invite" />;
-  else if (load.state === "error" && EXPIRED_GATE.includes(load.kind)) body = <AccessGate variant="expired" />;
+  const gate = load.state === "error" ? gateFor(load.kind) : null;
+  if (gate) body = <AccessGate variant={gate} />;
   else if (load.state === "error") body = <ErrorState onRetry={fetchFeed} />;
   else if (load.state === "loading") body = <p className="t-small app-muted">Загружаю ленту…</p>;
   else {
     const { feed } = load;
+    const counter = usage ?? feed.invite;
     body = (
       <>
         <header className="app-header">
@@ -74,14 +74,19 @@ export function App() {
             отправить обращение, Claude пишет черновик ответа.
           </p>
           <p className="t-meta app-muted">
-            Приглашение: {feed.invite.label} · разборов {feed.invite.used} из {feed.invite.limit}
+            Приглашение: {feed.invite.label} · разборов {counter.used} из {counter.limit}
           </p>
         </header>
         <Tabs tabs={TABS} value={tab} onChange={setTab} />
-        <div role="tabpanel">
-          {tab === "feed" && <Feed items={feed.requests} now={now} />}
-          {tab === "mine" && <Triage mine={feed.mine} />}
-          {tab === "how" && <HowItWorks />}
+        {/* Панели не размонтируются: разбор, черновик и фильтры ленты переживают смену вкладки. */}
+        <div role="tabpanel" hidden={tab !== "feed"}>
+          <Feed items={feed.requests} now={now} />
+        </div>
+        <div role="tabpanel" hidden={tab !== "mine"}>
+          <Triage mine={feed.mine} onUsage={setUsage} />
+        </div>
+        <div role="tabpanel" hidden={tab !== "how"}>
+          <HowItWorks />
         </div>
       </>
     );

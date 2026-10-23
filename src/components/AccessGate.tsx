@@ -11,19 +11,20 @@ const COPY = {
   },
 };
 
-export function AccessGate({ variant }: { variant: keyof typeof COPY }) {
+/** Экран доступа: на всю страницу или блоком внутри разбора, когда доступ закончился посреди сессии. */
+export function AccessGate({ variant, inline = false }: { variant: keyof typeof COPY; inline?: boolean }) {
   const copy = COPY[variant];
-  return (
-    <div className="app-gate-wrap">
-      <div className="it-gate">
-        <span className="it-gate__eyebrow">Разбор входящих</span>
-        <h1 className="it-gate__title">{copy.title}</h1>
-        <p className="it-gate__text">{copy.text}</p>
-        <a className="it-btn it-btn--primary" href={TELEGRAM_URL} target="_blank" rel="noreferrer">
-          Написать в Telegram
-        </a>
-        <span className="it-gate__handle">{TELEGRAM_HANDLE}</span>
-      </div>
+  const Title = inline ? "h2" : "h1";
+  const gate = (
+    <div className="it-gate" role={inline ? "alert" : undefined}>
+      <span className="it-gate__eyebrow">Разбор входящих</span>
+      <Title className="it-gate__title">{copy.title}</Title>
+      <p className="it-gate__text">{copy.text}</p>
+      <a className="it-btn it-btn--primary" href={TELEGRAM_URL} target="_blank" rel="noreferrer">
+        Написать в Telegram
+      </a>
+      <span className="it-gate__handle">{TELEGRAM_HANDLE}</span>
     </div>
   );
+  return inline ? gate : <div className="app-gate-wrap">{gate}</div>;
 }

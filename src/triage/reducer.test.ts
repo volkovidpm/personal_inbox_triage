@@ -87,4 +87,46 @@ describe("triageReducer", () => {
     expect(s.stages.draft).toEqual({ state: "stopped", meta: "не удалось" });
     expect(s.busy).toBe(false);
   });
+
+  it("сбой связи при разборе предлагает повторить разбор", () => {
+    const s = triageReducer(started(), { type: "failed", runId: 1, error: new ApiError("network") });
+    expect(s.retry).toBe("classify");
+    expect(s.access).toBeUndefined();
+  });
+
+  it("сбой черновика предлагает повторить только черновик", () => {
+    const routed = triageReducer(started(), { type: "classified", runId: 1, result: result({ jev, department: "service" }) });
+    const s = triageReducer(routed, { type: "failed", runId: 1, error: new ApiError("timeout") });
+    expect(s.retry).toBe("draft");
+    expect(s.result).toBe(routed.result);
+  });
+
+  it("повтор черновика снова его запускает и снимает ошибку", () => {
+    const routed = triageReducer(started(), { type: "classified", runId: 1, result: result({ jev, department: "service" }) });
+    const failed = triageReducer(routed, { type: "failed", runId: 1, error: new ApiError("network") });
+    const s = triageReducer(failed, { type: "redraft" });
+    expect(s.busy).toBe(true);
+    expect(s.error).toBeUndefined();
+    expect(s.retry).toBeUndefined();
+    expect(s.stages.draft).toEqual({ state: "active", meta: "пишет…" });
+    expect(s.stages.route.state).toBe("done");
+    expect(s.runId).toBe(1);
+  });
+
+  it("недоступность нейросети у черновика — отбивка без повтора", () => {
+    const routed = triageReducer(started(), { type: "classified", runId: 1, result: result({ jev, department: "service" }) });
+    const s = triageReducer(routed, { type: "failed", runId: 1, error: new ApiError("ai_unavailable", 503) });
+    expect(s.reason).toBe("ai_unavailable");
+    expect(s.retry).toBeUndefined();
+    expect(s.stages.draft).toEqual({ state: "stopped", meta: "недоступна" });
+  });
+
+  it("конец доступа посреди сессии — экран доступа вместо повтора", () => {
+    for (const [kind, access] of [["expired", "expired"], ["limit_reached", "expired"], ["inactive", "invite"]] as const) {
+      const s = triageReducer(started(), { type: "failed", runId: 1, error: new ApiError(kind, 403) });
+      expect(s.access).toBe(access);
+      expect(s.retry).toBeUndefined();
+      expect(s.stages.rules).toEqual({ state: "stopped", meta: "нет доступа" });
+    }
+  });
 });

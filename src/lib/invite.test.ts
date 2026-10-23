@@ -79,4 +79,14 @@ describe("getDeviceId", () => {
     expect(a).toMatch(/^[0-9a-f-]{36}$/);
     expect(getDeviceId(throwingStorage)).toBe(a);
   });
+
+  it("без crypto.randomUUID (старый Safari) всё равно создаёт UUID v4", () => {
+    const real = globalThis.crypto;
+    vi.stubGlobal("crypto", { getRandomValues: (b: Uint8Array) => real.getRandomValues(b) });
+    try {
+      expect(getDeviceId(memoryStorage())).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 });

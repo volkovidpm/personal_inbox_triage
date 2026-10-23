@@ -7,6 +7,7 @@ vi.mock("../lib/api", async (importOriginal) => {
   return { ...actual, classify: (...a: unknown[]) => classify(...a), draft: (...a: unknown[]) => draft(...a) };
 });
 
+import { ApiError } from "../lib/api";
 import { Triage } from "./Triage";
 
 const jev = { pRequest: 0.94, category: "review", pCategory: 0.91, pInjection: 0.03, score: 4, pCounterfeit: 0.85, ms: 312, source: "live" };
@@ -74,5 +75,56 @@ describe("Triage", () => {
     const button = screen.getByRole("button", { name: "Разобрать" }) as HTMLButtonElement;
     expect(button.disabled).toBe(true);
     await waitFor(() => expect(classify).not.toHaveBeenCalled());
+  });
+
+  it("после сбоя связи «Повторить» заново разбирает тот же текст", async () => {
+    classify
+      .mockRejectedValueOnce(new ApiError("network"))
+      .mockResolvedValueOnce({ id: "r3", outcome: "manual", rulesMs: 1, jev: { ...jev, pCategory: 0.5 }, department: "manual", flags: [], used: 1, limit: 50 });
+    render(<Triage mine={[]} />);
+    fireEvent.click(screen.getByRole("button", { name: "Отзыв с WB" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Повторить" }));
+    expect(await screen.findByText(/В рабочей системе обращение ушло бы на ручной разбор/)).toBeTruthy();
+    expect(classify).toHaveBeenCalledTimes(2);
+    expect(classify.mock.calls[1]).toEqual(classify.mock.calls[0]);
+  });
+
+  it("после сбоя черновика «Повторить» запрашивает только черновик", async () => {
+    classify.mockResolvedValueOnce({ id: "r4", outcome: "routed", rulesMs: 1, jev, department: "service", flags: [], used: 1, limit: 50 });
+    draft
+      .mockRejectedValueOnce(new ApiError("timeout"))
+      .mockResolvedValueOnce({ id: "r4", text: "Пришлите номер заказа.", ms: 1800, model: "claude-haiku-5-5", source: "live" });
+    render(<Triage mine={[]} />);
+    fireEvent.click(screen.getByRole("button", { name: "Отзыв с WB" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Повторить" }));
+    expect(await screen.findByText("Пришлите номер заказа.")).toBeTruthy();
+    expect(classify).toHaveBeenCalledTimes(1);
+    expect(draft).toHaveBeenNthCalledWith(2, "r4");
+  });
+
+  it("недоступность нейросети у черновика показывает отбивку", async () => {
+    classify.mockResolvedValueOnce({ id: "r5", outcome: "routed", rulesMs: 1, jev, department: "service", flags: [], used: 1, limit: 50 });
+    draft.mockRejectedValueOnce(new ApiError("ai_unavailable", 503));
+    render(<Triage mine={[]} />);
+    fireEvent.click(screen.getByRole("button", { name: "Отзыв с WB" }));
+    expect(await screen.findByText("Нейросети недоступны")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Повторить" })).toBeNull();
+  });
+
+  it("конец доступа посреди сессии показывает текст и Telegram, как экран доступа", async () => {
+    classify.mockRejectedValueOnce(new ApiError("limit_reached", 403));
+    render(<Triage mine={[]} />);
+    fireEvent.click(screen.getByRole("button", { name: "Отзыв с WB" }));
+    expect(await screen.findByText("Срок доступа закончился — напишите Игорю, продлю")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Написать в Telegram" }).getAttribute("href")).toBe("https://t.me/volkovid");
+    expect(screen.queryByRole("button", { name: "Повторить" })).toBeNull();
+  });
+
+  it("сообщает новый счётчик разборов", async () => {
+    const onUsage = vi.fn();
+    classify.mockResolvedValueOnce({ id: "r6", outcome: "manual", rulesMs: 1, jev, department: "manual", flags: [], used: 7, limit: 50 });
+    render(<Triage mine={[]} onUsage={onUsage} />);
+    fireEvent.click(screen.getByRole("button", { name: "Отзыв с WB" }));
+    await waitFor(() => expect(onUsage).toHaveBeenCalledWith({ used: 7, limit: 50 }));
   });
 });

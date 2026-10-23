@@ -15,7 +15,8 @@ const start = trigger({
           { name: 'invite', type: 'string' },
           { name: 'device', type: 'string' },
           { name: 'markOpen', type: 'boolean' },
-          { name: 'userAgent', type: 'string' }
+          { name: 'userAgent', type: 'string' },
+          { name: 'skipLimit', type: 'boolean' }
         ]
       }
     }
@@ -54,12 +55,14 @@ const check = node({
         "const row = $input.first().json || {};\n" +
         "const code = typeof input.invite === 'string' ? input.invite : '';\n" +
         "const device = typeof input.device === 'string' && /^[A-Za-z0-9-]{8,64}$/.test(input.device) ? input.device : 'unknown';\n" +
+        "// /draft дописывает уже посчитанный разбор: лимит для него не проверяем.\n" +
+        "const skipLimit = input.skipLimit === true || input.skipLimit === 'true';\n" +
         "let res;\n" +
         "if (!/^[A-Za-z0-9]{16}$/.test(code)) res = { ok: false, status: 401, error: code ? 'unknown_invite' : 'no_invite' };\n" +
         "else if (row.code !== code) res = { ok: false, status: 401, error: 'unknown_invite' };\n" +
         "else if (!row.active) res = { ok: false, status: 403, error: 'inactive' };\n" +
         "else if (new Date(row.expires_at).getTime() < Date.now()) res = { ok: false, status: 403, error: 'expired' };\n" +
-        "else if (Number(row.used) >= Number(row.limit_count)) res = { ok: false, status: 403, error: 'limit_reached' };\n" +
+        "else if (!skipLimit && Number(row.used) >= Number(row.limit_count)) res = { ok: false, status: 403, error: 'limit_reached' };\n" +
         "else res = {\n" +
         "  ok: true,\n" +
         "  invite: { code: row.code, label: row.label, limit: Number(row.limit_count), used: Number(row.used), expiresAt: row.expires_at, firstOpenAt: row.first_open_at || null, limitNotified: !!row.limit_notified },\n" +

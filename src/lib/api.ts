@@ -37,6 +37,15 @@ export class ApiError extends Error {
   }
 }
 
+export type Gate = "invite" | "expired";
+
+/** Какой экран доступа показать на эту ошибку; null — ошибка не про доступ. */
+export function gateFor(kind: ApiErrorKind): Gate | null {
+  if (kind === "no_invite" || kind === "unknown_invite" || kind === "inactive") return "invite";
+  if (kind === "expired" || kind === "limit_reached") return "expired";
+  return null;
+}
+
 let auth: { invite: string | null; device: string } = { invite: null, device: "" };
 
 export function configureApi(next: { invite: string | null; device: string }) {
@@ -60,13 +69,13 @@ async function call<T>(path: string, fields: Record<string, string>, timeoutMs: 
     clearTimeout(timer);
   }
 
+  if (response.status === 429) throw new ApiError("rate_limited", 429);
   let data: unknown;
   try {
     data = await response.json();
   } catch {
     throw new ApiError("bad_response", response.status);
   }
-  if (response.status === 429) throw new ApiError("rate_limited", 429);
   const error = (data as { error?: string } | null)?.error as ApiErrorKind | undefined;
   if (!response.ok || error) {
     throw new ApiError(error && SERVER_KINDS.includes(error) ? error : "bad_response", response.status);
