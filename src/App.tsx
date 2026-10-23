@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AccessGate } from "./components/AccessGate";
 import { DemoBanner } from "./components/DemoBanner";
 import { ErrorState } from "./components/ErrorState";
+import { HowItWorks } from "./components/HowItWorks";
 import { Feed } from "./components/Feed";
 import { Tabs } from "./components/Tabs";
 import { Triage } from "./components/Triage";
@@ -80,7 +81,7 @@ export function App() {
         <div role="tabpanel">
           {tab === "feed" && <Feed items={feed.requests} now={now} />}
           {tab === "mine" && <Triage mine={feed.mine} />}
-          {tab === "how" && <p className="t-small app-muted">Скоро здесь появится схема работы.</p>}
+          {tab === "how" && <HowItWorks />}
         </div>
       </>
     );
