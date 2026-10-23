@@ -13,7 +13,7 @@ const WORKFLOWS = [
   { file: "classify.json", label: "Разбор" },
   { file: "draft.json", label: "Черновик" },
   { file: "feed.json", label: "Лента" },
-  { file: "access-check.json", label: "Проверка доступа" },
+  { file: "src/access-check.ts", label: "Проверка доступа" },
 ];
 
 export function HowItWorks() {
