@@ -59,6 +59,15 @@ describe("classify", () => {
     expect(await kindOf(classify("т"))).toBe("rate_limited");
   });
 
+  it("знает отказы черновика", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(409, { error: "no_draft" }));
+    expect(await kindOf(draft("r1"))).toBe("no_draft");
+    fetchMock.mockResolvedValueOnce(jsonResponse(404, { error: "not_found" }));
+    expect(await kindOf(draft("r1"))).toBe("not_found");
+    fetchMock.mockResolvedValueOnce(jsonResponse(503, { error: "ai_unavailable" }));
+    expect(await kindOf(draft("r1"))).toBe("ai_unavailable");
+  });
+
   it("не-JSON ответ — bad_response, обрыв сети — network", async () => {
     fetchMock.mockResolvedValueOnce(new Response("<html>Bad gateway</html>", { status: 502, headers: { "Content-Type": "text/html" } }));
     expect(await kindOf(classify("т"))).toBe("bad_response");

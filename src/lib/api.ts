@@ -8,11 +8,24 @@ export type ApiErrorKind =
   | "limit_reached"
   | "inactive"
   | "rate_limited"
+  | "no_draft"
+  | "not_found"
+  | "ai_unavailable"
   | "network"
   | "timeout"
   | "bad_response";
 
-const SERVER_KINDS: ApiErrorKind[] = ["no_invite", "unknown_invite", "expired", "limit_reached", "inactive", "rate_limited"];
+const SERVER_KINDS: ApiErrorKind[] = [
+  "no_invite",
+  "unknown_invite",
+  "expired",
+  "limit_reached",
+  "inactive",
+  "rate_limited",
+  "no_draft",
+  "not_found",
+  "ai_unavailable",
+];
 
 export class ApiError extends Error {
   constructor(

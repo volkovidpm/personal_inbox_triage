@@ -81,3 +81,14 @@ body {
 .app-gate-wrap {
   padding-block: var(--space-8);
 }
+
+.app-section-title {
+  margin: 0;
+}
+
+.app-meters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-4) var(--space-6);
+  align-items: start;
+}

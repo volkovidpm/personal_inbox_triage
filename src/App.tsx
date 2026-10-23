@@ -4,6 +4,7 @@ import { DemoBanner } from "./components/DemoBanner";
 import { ErrorState } from "./components/ErrorState";
 import { Feed } from "./components/Feed";
 import { Tabs } from "./components/Tabs";
+import { Triage } from "./components/Triage";
 import { ApiError, configureApi, getFeed, type ApiErrorKind } from "./lib/api";
 import { getDeviceId, loadInvite } from "./lib/invite";
 import type { FeedResponse } from "./lib/types";
@@ -78,7 +79,7 @@ export function App() {
         <Tabs tabs={TABS} value={tab} onChange={setTab} />
         <div role="tabpanel">
           {tab === "feed" && <Feed items={feed.requests} now={now} />}
-          {tab === "mine" && <p className="t-small app-muted">Скоро здесь появится разбор своего запроса.</p>}
+          {tab === "mine" && <Triage mine={feed.mine} />}
           {tab === "how" && <p className="t-small app-muted">Скоро здесь появится схема работы.</p>}
         </div>
       </>
