@@ -28,25 +28,26 @@ async function kindOf(p: Promise<unknown>) {
 }
 
 describe("classify", () => {
-  it("шлёт POST с кодом, устройством и текстом", async () => {
+  it("шлёт простой POST-формой: код, устройство и текст, без своих заголовков", async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, { id: "r1", outcome: "routed", rulesMs: 1, flags: [], used: 1, limit: 50 }));
     const result = await classify("текст");
     expect(result.id).toBe("r1");
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe(`${API_BASE}/classify`);
     expect(init.method).toBe("POST");
-    expect(init.headers).toMatchObject({
-      "X-Invite": "k7Qm2xP9vR4tAb1Z",
-      "X-Device": "11111111-2222-4333-8444-555555555555",
-      "Content-Type": "application/json",
+    expect(init.headers).toBeUndefined();
+    expect(init.body).toBeInstanceOf(URLSearchParams);
+    expect(Object.fromEntries(init.body)).toEqual({
+      invite: "k7Qm2xP9vR4tAb1Z",
+      device: "11111111-2222-4333-8444-555555555555",
+      text: "текст",
     });
-    expect(JSON.parse(init.body)).toEqual({ text: "текст" });
   });
 
   it("передаёт exampleId для кнопок-примеров", async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, { id: "r1", outcome: "routed", rulesMs: 1, flags: [], used: 1, limit: 50 }));
     await classify("текст", "review");
-    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ text: "текст", exampleId: "review" });
+    expect(Object.fromEntries(fetchMock.mock.calls[0][1].body).exampleId).toBe("review");
   });
 
   it("переводит ответы сервера об отказе в доступе в виды ошибок", async () => {
@@ -94,20 +95,24 @@ describe("draft", () => {
     const pending = draft("r1");
     await vi.advanceTimersByTimeAsync(20_000);
     expect((await pending).text).toBe("Ответ");
-    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ id: "r1" });
+    expect(Object.fromEntries(fetchMock.mock.calls[0][1].body).id).toBe("r1");
   });
 });
 
 describe("getFeed", () => {
-  it("шлёт GET без тела и без Content-Type", async () => {
+  it("шлёт POST-формой с кодом и устройством", async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, { invite: { label: "Тест", expiresAt: "", limit: 50, used: 0 }, requests: [], mine: [] }));
     const feed = await getFeed();
     expect(feed.invite.label).toBe("Тест");
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe(`${API_BASE}/feed`);
-    expect(init.method).toBe("GET");
-    expect(init.body).toBeUndefined();
-    expect(init.headers["Content-Type"]).toBeUndefined();
+    expect(init.method).toBe("POST");
+    expect(Object.fromEntries(init.body)).toEqual({ invite: "k7Qm2xP9vR4tAb1Z", device: "11111111-2222-4333-8444-555555555555" });
+  });
+
+  it("ответ 200 с полем error — это отказ сервера", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { error: "expired" }));
+    expect(await kindOf(getFeed())).toBe("expired");
   });
 
   it("без приглашения не ходит в сеть", async () => {

@@ -30,21 +30,17 @@ export function configureApi(next: { invite: string | null; device: string }) {
   auth = next;
 }
 
-async function call<T>(path: string, init: { method: "GET" | "POST"; body?: unknown; timeoutMs: number }): Promise<T> {
+// Все запросы — простой POST с формой (application/x-www-form-urlencoded) без своих
+// заголовков: браузер не делает предварительный CORS-запрос, который n8n может не обработать.
+async function call<T>(path: string, fields: Record<string, string>, timeoutMs: number): Promise<T> {
   if (!auth.invite) throw new ApiError("no_invite");
-  const headers: Record<string, string> = { "X-Invite": auth.invite, "X-Device": auth.device };
-  if (init.body !== undefined) headers["Content-Type"] = "application/json";
+  const body = new URLSearchParams({ invite: auth.invite, device: auth.device, ...fields });
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), init.timeoutMs);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   let response: Response;
   try {
-    response = await fetch(`${API_BASE}${path}`, {
-      method: init.method,
-      headers,
-      body: init.body === undefined ? undefined : JSON.stringify(init.body),
-      signal: controller.signal,
-    });
+    response = await fetch(`${API_BASE}${path}`, { method: "POST", body, signal: controller.signal });
   } catch {
     throw new ApiError(controller.signal.aborted ? "timeout" : "network");
   } finally {
@@ -57,22 +53,22 @@ async function call<T>(path: string, init: { method: "GET" | "POST"; body?: unkn
   } catch {
     throw new ApiError("bad_response", response.status);
   }
-  if (!response.ok) {
-    const error = (data as { error?: string } | null)?.error as ApiErrorKind | undefined;
-    if (response.status === 429) throw new ApiError("rate_limited", 429);
+  if (response.status === 429) throw new ApiError("rate_limited", 429);
+  const error = (data as { error?: string } | null)?.error as ApiErrorKind | undefined;
+  if (!response.ok || error) {
     throw new ApiError(error && SERVER_KINDS.includes(error) ? error : "bad_response", response.status);
   }
   return data as T;
 }
 
 export function getFeed(): Promise<FeedResponse> {
-  return call("/feed", { method: "GET", timeoutMs: 15_000 });
+  return call("/feed", {}, 15_000);
 }
 
 export function classify(text: string, exampleId?: string): Promise<ClassifyResult> {
-  return call("/classify", { method: "POST", body: exampleId ? { text, exampleId } : { text }, timeoutMs: 15_000 });
+  return call("/classify", exampleId ? { text, exampleId } : { text }, 15_000);
 }
 
 export function draft(id: string): Promise<DraftResult> {
-  return call("/draft", { method: "POST", body: { id }, timeoutMs: 30_000 });
+  return call("/draft", { id }, 30_000);
 }
