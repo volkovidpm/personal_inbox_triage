@@ -1,0 +1,83 @@
+/* Раскладка страницы демо. Компоненты — в bundle.css дизайн-системы. */
+html,
+body {
+  margin: 0;
+  background: var(--paper);
+}
+
+.app-page {
+  min-height: 100vh;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: 1080px;
+  margin: 0 auto;
+  padding-block: var(--space-6) var(--space-12);
+  padding-left: max(var(--space-4), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--space-4), env(safe-area-inset-right, 0px));
+}
+
+@media (min-width: 768px) {
+  .app {
+    padding-left: max(var(--space-6), env(safe-area-inset-left, 0px));
+    padding-right: max(var(--space-6), env(safe-area-inset-right, 0px));
+  }
+}
+
+.app-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.app-title {
+  margin: 0;
+  text-wrap: balance;
+}
+
+@media (max-width: 560px) {
+  .app-title {
+    font-size: 28px;
+    line-height: 32px;
+  }
+}
+
+.app-lead {
+  max-width: 68ch;
+  margin: 0;
+}
+
+.app-muted {
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+.app-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.app-feed {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.it-card__text,
+.it-draft__text,
+.it-notice__text {
+  overflow-wrap: anywhere;
+}
+
+.app-card-toggle {
+  min-height: 28px;
+  padding: 0 var(--space-2);
+  font-size: 13px;
+}
+
+.app-gate-wrap {
+  padding-block: var(--space-8);
+}

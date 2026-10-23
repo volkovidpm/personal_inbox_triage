@@ -1,4 +1,4 @@
-import type { Channel, Department } from "./types";
+import type { Category, Channel, Department, Status } from "./types";
 
 export function formatPercent(p: number): string {
   return `${Math.round(p * 100)}%`;
@@ -31,3 +31,15 @@ export const CHANNEL_LABEL: Record<Channel, string> = {
   hh: "hh.ru",
   internal: "Внутренний чат",
 };
+
+export const TYPE_LABEL: Record<Category, string> = {
+  review: "Отзыв",
+  wholesale: "Опт",
+  blogger: "Блогер",
+  candidate: "Отклик",
+  approval: "Согласование",
+  spam: "Спам",
+  off_topic: "Не по теме",
+};
+
+export const STATUS_LABEL: Record<Status, string> = { new: "Новое", work: "В работе", done: "Отвечено" };
